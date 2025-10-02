@@ -7,11 +7,12 @@ A lightweight desktop editor for n8n workflow JSON files, built with Electron an
 ## Features
 
 - **Tree View**: Browse workflow nodes organized by type
+- **Node Search**: Find nodes quickly by name, type, or category
 - **Monaco Editor**: Full syntax highlighting for JSON and JavaScript
 - **Code Tab**: Dedicated JavaScript editor for code nodes with proper formatting
 - **Drag & Drop**: Drop JSON files directly into the app
 - **Keyboard Shortcuts**: Save with Cmd/Ctrl+S
-- **Unsaved Changes Warning**: Prompts before closing with unsaved work
+- **Unsaved Changes Warning**: Visual indicator and prompts before closing
 - **Export/Import**: Easy workflow management
 
 ## Installation
@@ -27,16 +28,19 @@ npm install
 ### Development Mode
 
 ```bash
-npm start
+npm run electron:dev
 ```
 
-### Build for Mac
+### Build
 
 ```bash
-npm run build
+npm run build        # macOS
+npm run build:win    # Windows
+npm run build:linux  # Linux
+npm run build:all    # All platforms
 ```
 
-The `.dmg` and `.zip` files will be in the `dist/` folder.
+The build files will be in the `dist/` folder.
 
 ### Opening Workflows
 
@@ -46,21 +50,38 @@ The `.dmg` and `.zip` files will be in the `dist/` folder.
 
 ### Editing
 
+- Use the search bar to find nodes quickly
 - Click on any node in the tree to edit its JSON
-- For code nodes, use the "Code" tab for a better JavaScript editing experience
+- For code nodes, use the "Code" tab for JavaScript editing
 - Save changes with the "Save" button or Cmd/Ctrl+S
+- Unsaved changes are indicated with an orange dot
 
 ## Project Structure
 
 ```
 n8n-code/
-├── main.js           # Electron main process
-├── preload.js        # Preload script for IPC
-├── package.json      # Dependencies and scripts
-├── src/
-│   ├── index.html    # Main HTML file
-│   └── index.js      # React app with Monaco Editor
-└── public/           # Static assets (might be empty)
+├── main.js
+├── preload.js
+├── package.json
+├── electron/
+│   ├── window.js
+│   └── ipc-handlers.js
+└── src/
+    ├── index.html
+    ├── index.js
+    ├── App.jsx
+    ├── components/
+    │   ├── Icons.jsx
+    │   ├── Sidebar.jsx
+    │   ├── TreeView.jsx
+    │   ├── TopBar.jsx
+    │   └── EditorPanel.jsx
+    ├── hooks/
+    │   ├── useWorkflow.js
+    │   └── useFileOperations.js
+    └── utils/
+        ├── workflowParser.js
+        └── codeExtractor.js
 ```
 
 ## Requirements
@@ -75,6 +96,19 @@ n8n-code/
 - Monaco Editor
 - Tailwind CSS
 
+## Changelog
+
+### v1.1.0
+- Added node search functionality
+- Refactored to modular component structure
+- Added custom hooks for state management
+- Improved error handling
+- Added unsaved changes visual indicator
+- Better code organization
+
+### v1.0.0
+- Initial release
+
 ## License
 
 MIT
@@ -82,10 +116,6 @@ MIT
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first.
-
-## Author
-
-Your Name
 
 ## Acknowledgments
 
