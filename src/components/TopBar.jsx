@@ -1,7 +1,7 @@
 import React from 'react';
-import { File, Save } from './Icons.jsx';
+import { File, Save, Cloud } from './Icons.jsx';
 
-export const TopBar = ({ selectedNode, onSave, hasUnsavedChanges }) => {
+export const TopBar = ({ selectedNode, onSave, hasUnsavedChanges, isN8nWorkflow }) => {
   return (
     <div className="h-10 bg-[#252526] border-b border-[#3e3e42] flex items-center px-3 gap-3">
       {selectedNode ? (
@@ -11,6 +11,12 @@ export const TopBar = ({ selectedNode, onSave, hasUnsavedChanges }) => {
           <span className="text-[10px] text-gray-500 px-2 py-0.5 bg-[#3e3e42] rounded">
             {selectedNode.category}
           </span>
+          {isN8nWorkflow && (
+            <span className="text-[10px] text-blue-400 px-2 py-0.5 bg-blue-900 bg-opacity-30 rounded flex items-center gap-1">
+              <Cloud size={10} />
+              n8n
+            </span>
+          )}
           {hasUnsavedChanges && (
             <span className="text-[10px] text-orange-400">●</span>
           )}
@@ -19,7 +25,7 @@ export const TopBar = ({ selectedNode, onSave, hasUnsavedChanges }) => {
             className="ml-auto px-3 py-1 bg-[#0e639c] hover:bg-[#1177bb] rounded text-xs flex items-center gap-1.5 transition-colors"
           >
             <Save size={12} />
-            Save
+            {isN8nWorkflow ? 'Save to n8n' : 'Save'}
           </button>
         </>
       ) : (

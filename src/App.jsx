@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { EditorPanel } from './components/EditorPanel.jsx';
+import { Settings } from './components/Settings.jsx';
 import { useWorkflow } from './hooks/useWorkflow.js';
 import { useFileOperations } from './hooks/useFileOperations.js';
-import { extractCode, hasCode, escapeCode } from './utils/codeExtractor.js';
+import { useN8nConnection } from './hooks/useN8nConnection.js';
+import { extractCode, hasCode } from './utils/codeExtractor.js';
 
 const N8NEditor = () => {
   const {
@@ -20,11 +22,24 @@ const N8NEditor = () => {
 
   const { handleOpenFile, handleSaveFile, handleExportFile } = useFileOperations(loadWorkflow);
 
+  const {
+    isConnected: isN8nConnected,
+    workflows: n8nWorkflows,
+    loading: n8nLoading,
+    connect: connectN8n,
+    disconnect: disconnectN8n,
+    loadWorkflows: loadN8nWorkflows,
+    getWorkflow: getN8nWorkflow,
+    updateWorkflow: updateN8nWorkflow,
+  } = useN8nConnection();
+
   const [selectedNode, setSelectedNode] = useState(null);
   const [editorContent, setEditorContent] = useState('');
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [activeTab, setActiveTab] = useState('json');
   const [codeField, setCodeField] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [currentN8nWorkflowId, setCurrentN8nWorkflowId] = useState(null);
   
   const monacoRef = useRef(null);
   const editorContainerRef = useRef(null);
@@ -48,8 +63,7 @@ const N8NEditor = () => {
       
       if (activeTab === 'code' && codeField) {
         updatedData = JSON.parse(JSON.stringify(selectedNode.data));
-        const escapedCode = escapeCode(editorContent);
-        updatedData.parameters[codeField.field] = escapedCode;
+        updatedData.parameters[codeField.field] = editorContent;
       } else {
         updatedData = JSON.parse(editorContent);
       }
@@ -62,18 +76,24 @@ const N8NEditor = () => {
       const updatedNode = { ...selectedNode, data: updatedData };
       setSelectedNode(updatedNode);
       
-      const saved = await handleSaveFile(
-        JSON.stringify(newWorkflow, null, 2),
-        currentFilePath
-      );
-      
-      if (saved) {
-        setCurrentFilePath(saved);
+      if (currentN8nWorkflowId) {
+        await updateN8nWorkflow(currentN8nWorkflowId, newWorkflow);
         setHasUnsavedChanges(false);
-        alert('Saved successfully');
+        alert('Saved to n8n successfully');
+      } else {
+        const saved = await handleSaveFile(
+          JSON.stringify(newWorkflow, null, 2),
+          currentFilePath
+        );
+        
+        if (saved) {
+          setCurrentFilePath(saved);
+          setHasUnsavedChanges(false);
+          alert('Saved successfully');
+        }
       }
     } catch (err) {
-      alert('Invalid content: ' + err.message);
+      alert('Error saving: ' + err.message);
     }
   };
 
@@ -90,7 +110,7 @@ const N8NEditor = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedNode, workflow, editorContent, activeTab, codeField, currentFilePath]);
+  }, [selectedNode, workflow, editorContent, activeTab, codeField, currentFilePath, currentN8nWorkflowId]);
 
   const handleNodeClick = (node) => {
     setSelectedNode(node);
@@ -117,6 +137,18 @@ const N8NEditor = () => {
     setHasUnsavedChanges(content !== originalContent);
   };
 
+  const handleOpenN8nWorkflow = async (n8nWorkflow) => {
+    try {
+      const fullWorkflow = await getN8nWorkflow(n8nWorkflow.id);
+      loadWorkflow(fullWorkflow, null);
+      setCurrentN8nWorkflowId(n8nWorkflow.id);
+      setCurrentFilePath(null);
+      setSelectedNode(null);
+    } catch (err) {
+      alert('Error loading workflow from n8n: ' + err.message);
+    }
+  };
+
   const nodeHasCode = selectedNode ? hasCode(selectedNode.data) : false;
 
   return (
@@ -130,6 +162,12 @@ const N8NEditor = () => {
         onExport={handleExport}
         expandedFolders={expandedFolders}
         onToggleFolder={toggleFolder}
+        isN8nConnected={isN8nConnected}
+        n8nWorkflows={n8nWorkflows}
+        onOpenN8nWorkflow={handleOpenN8nWorkflow}
+        onSettingsClick={() => setSettingsOpen(true)}
+        onRefreshN8n={loadN8nWorkflows}
+        n8nLoading={n8nLoading}
       />
       
       <div className="flex-1 flex flex-col">
@@ -137,6 +175,7 @@ const N8NEditor = () => {
           selectedNode={selectedNode}
           onSave={handleSave}
           hasUnsavedChanges={hasUnsavedChanges}
+          isN8nWorkflow={!!currentN8nWorkflowId}
         />
         
         <EditorPanel
@@ -150,6 +189,14 @@ const N8NEditor = () => {
           editorContainerRef={editorContainerRef}
         />
       </div>
+
+      <Settings
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onConnect={connectN8n}
+        isConnected={isN8nConnected}
+        onDisconnect={disconnectN8n}
+      />
     </div>
   );
 };

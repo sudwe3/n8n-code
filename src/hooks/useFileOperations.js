@@ -14,8 +14,6 @@ export const useFileOperations = (loadWorkflow) => {
       }
     };
 
-    window.electronAPI.onFileDropped(handleFileDrop);
-
     const handleDragOver = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -44,10 +42,12 @@ export const useFileOperations = (loadWorkflow) => {
       }
     };
 
+    const removeFileDropListener = window.electronAPI.onFileDropped(handleFileDrop);
     document.addEventListener('dragover', handleDragOver);
     document.addEventListener('drop', handleDrop);
 
     return () => {
+      removeFileDropListener();
       document.removeEventListener('dragover', handleDragOver);
       document.removeEventListener('drop', handleDrop);
     };

@@ -6,6 +6,7 @@ A lightweight desktop editor for n8n workflow JSON files, built with Electron an
 
 ## Features
 
+- **Direct N8N API Access**: Open your own workflows directly from the editor. Real time sync
 - **Tree View**: Browse workflow nodes organized by type
 - **Node Search**: Find nodes quickly by name, type, or category
 - **Monaco Editor**: Full syntax highlighting for JSON and JavaScript
@@ -95,19 +96,6 @@ n8n-code/
 - React 18
 - Monaco Editor
 - Tailwind CSS
-
-## Changelog
-
-### v1.1.0
-- Added node search functionality
-- Refactored to modular component structure
-- Added custom hooks for state management
-- Improved error handling
-- Added unsaved changes visual indicator
-- Better code organization
-
-### v1.0.0
-- Initial release
 
 ## License
 
