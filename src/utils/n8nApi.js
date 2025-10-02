@@ -1,5 +1,8 @@
 export class N8nApi {
   constructor(baseUrl, apiKey) {
+    if (!baseUrl || !apiKey) {
+      throw new Error('Base URL and API Key are required');
+    }
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
   }
@@ -7,21 +10,29 @@ export class N8nApi {
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}/api/v1${endpoint}`;
     
-    const result = await window.electronAPI.n8nApiRequest({
-      url,
-      method: options.method || 'GET',
-      body: options.body || null,
-      apiKey: this.apiKey
-    });
+    try {
+      const result = await window.electronAPI.n8nApiRequest({
+        url,
+        method: options.method || 'GET',
+        body: options.body || null,
+        apiKey: this.apiKey
+      });
 
-    if (!result.success) {
-      throw new Error(result.error || 'API request failed');
+      if (!result.success) {
+        throw new Error(result.error || 'API request failed');
+      }
+
+      return result.data;
+    } catch (error) {
+      throw new Error(`N8N API Error: ${error.message}`);
     }
-
-    return result.data;
   }
 
   cleanWorkflowForUpdate(workflow) {
+    if (!workflow || !workflow.nodes) {
+      throw new Error('Invalid workflow structure');
+    }
+
     const cleanedNodes = workflow.nodes.map(node => {
       const cleanNode = {
         parameters: node.parameters || {},
@@ -39,10 +50,10 @@ export class N8nApi {
     });
 
     return {
-      name: workflow.name,
+      name: workflow.name || 'Untitled Workflow',
       nodes: cleanedNodes,
       connections: workflow.connections || {},
-      settings: {}
+      settings: workflow.settings || {}
     };
   }
 
@@ -60,10 +71,12 @@ export class N8nApi {
   }
 
   async getWorkflow(id) {
+    if (!id) throw new Error('Workflow ID is required');
     return this.request(`/workflows/${id}`);
   }
 
   async updateWorkflow(id, workflow) {
+    if (!id) throw new Error('Workflow ID is required');
     const cleanedWorkflow = this.cleanWorkflowForUpdate(workflow);
     return this.request(`/workflows/${id}`, {
       method: 'PUT',
@@ -80,18 +93,21 @@ export class N8nApi {
   }
 
   async deleteWorkflow(id) {
+    if (!id) throw new Error('Workflow ID is required');
     return this.request(`/workflows/${id}`, {
       method: 'DELETE',
     });
   }
 
   async activateWorkflow(id) {
+    if (!id) throw new Error('Workflow ID is required');
     return this.request(`/workflows/${id}/activate`, {
       method: 'POST',
     });
   }
 
   async deactivateWorkflow(id) {
+    if (!id) throw new Error('Workflow ID is required');
     return this.request(`/workflows/${id}/deactivate`, {
       method: 'POST',
     });

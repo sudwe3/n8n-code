@@ -1,9 +1,11 @@
 export const parseWorkflow = (wf) => {
-  if (!wf || !wf.nodes) return {};
+  if (!wf || !wf.nodes || !Array.isArray(wf.nodes)) return {};
   
   const grouped = {};
   
   wf.nodes.forEach((node, idx) => {
+    if (!node) return;
+    
     const nodeType = node.type || 'Unknown';
     const category = nodeType.split('.').pop() || 'Other';
     
@@ -28,7 +30,9 @@ export const searchNodes = (tree, query) => {
   if (!query || !tree) return tree;
   
   const filtered = {};
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
+  
+  if (!lowerQuery) return tree;
   
   Object.keys(tree).forEach(category => {
     const matchingNodes = tree[category].filter(node => 

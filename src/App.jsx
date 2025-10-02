@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { EditorPanel } from './components/EditorPanel.jsx';
@@ -53,9 +53,9 @@ const N8NEditor = () => {
         setActiveTab('json');
       }
     }
-  }, [selectedNode]);
+  }, [selectedNode, activeTab]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!selectedNode || !workflow) return;
 
     try {
@@ -95,7 +95,7 @@ const N8NEditor = () => {
     } catch (err) {
       alert('Error saving: ' + err.message);
     }
-  };
+  }, [selectedNode, workflow, editorContent, activeTab, codeField, currentFilePath, currentN8nWorkflowId, updateWorkflow, setHasUnsavedChanges, handleSaveFile, setCurrentFilePath, updateN8nWorkflow]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -110,7 +110,7 @@ const N8NEditor = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedNode, workflow, editorContent, activeTab, codeField, currentFilePath, currentN8nWorkflowId]);
+  }, [handleSave]);
 
   const handleNodeClick = (node) => {
     setSelectedNode(node);

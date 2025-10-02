@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { extractCode, unescapeCode } from '../utils/codeExtractor.js';
 
 export const EditorPanel = ({ 
   selectedNode, 
@@ -14,13 +15,22 @@ export const EditorPanel = ({
   const isInitializing = useRef(false);
 
   useEffect(() => {
+    return () => {
+      if (monacoRef.current) {
+        monacoRef.current.dispose();
+        monacoRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!selectedNode || !editorContainerRef.current) return;
     
     const initEditor = () => {
       let content, language;
       
       if (activeTab === 'code' && hasCode) {
-        const codeInfo = extractCodeInfo(selectedNode.data);
+        const codeInfo = extractCode(selectedNode.data);
         content = codeInfo ? unescapeCode(codeInfo.code) : '';
         language = 'javascript';
       } else {
@@ -45,7 +55,6 @@ export const EditorPanel = ({
 
         monacoRef.current.onDidChangeModelContent(() => {
           if (isInitializing.current) {
-            isInitializing.current = false;
             return;
           }
           const newContent = monacoRef.current.getValue();
@@ -57,9 +66,9 @@ export const EditorPanel = ({
         monacoRef.current.setValue(content);
       }
       
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         isInitializing.current = false;
-      }, 100);
+      });
     };
     
     if (!window.monaco) {
@@ -77,20 +86,6 @@ export const EditorPanel = ({
       initEditor();
     }
   }, [selectedNode, activeTab]);
-
-  const extractCodeInfo = (node) => {
-    const codeFields = ['jsCode', 'functionCode', 'code', 'javascriptCode'];
-    for (const field of codeFields) {
-      if (node.parameters && node.parameters[field]) {
-        return { code: node.parameters[field], field };
-      }
-    }
-    return null;
-  };
-
-  const unescapeCode = (code) => {
-    return code.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-  };
 
   return (
     <>

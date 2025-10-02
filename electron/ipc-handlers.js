@@ -11,28 +11,32 @@ function setupIpcHandlers(mainWindow) {
   app.on('open-file', async (event, filePath) => {
     event.preventDefault();
     if (mainWindow && filePath.endsWith('.json')) {
-      const content = await fs.readFile(filePath, 'utf-8');
-      mainWindow.webContents.send('file-dropped', { content, path: filePath });
-      setUnsavedChanges(false);
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        mainWindow.webContents.send('file-dropped', { content, path: filePath });
+        setUnsavedChanges(false);
+      } catch (err) {
+        console.error('Error opening file:', err);
+      }
     }
   });
 
   ipcMain.handle('open-file', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile'],
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    });
-    
-    if (!result.canceled && result.filePaths.length > 0) {
-      try {
+    try {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile'],
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      });
+      
+      if (!result.canceled && result.filePaths.length > 0) {
         const content = await fs.readFile(result.filePaths[0], 'utf-8');
         setUnsavedChanges(false);
         return { content, path: result.filePaths[0] };
-      } catch (err) {
-        return { error: err.message };
       }
+      return null;
+    } catch (err) {
+      return { error: err.message };
     }
-    return null;
   });
 
   ipcMain.handle('save-file', async (event, content, filePath) => {
@@ -73,7 +77,6 @@ function setupIpcHandlers(mainWindow) {
     setUnsavedChanges(hasChanges);
   });
 
-  // N8N Config handlers
   ipcMain.handle('save-n8n-config', async (event, config) => {
     try {
       await fs.writeFile(CONFIG_FILE, JSON.stringify(config), 'utf-8');
@@ -101,57 +104,66 @@ function setupIpcHandlers(mainWindow) {
     }
   });
 
-  // N8N API proxy
   ipcMain.handle('n8n-api-request', async (event, { url, method, body, apiKey }) => {
-    return new Promise((resolve, reject) => {
-      const urlObj = new URL(url);
-      const isHttps = urlObj.protocol === 'https:';
-      const lib = isHttps ? https : http;
+    return new Promise((resolve) => {
+      try {
+        const urlObj = new URL(url);
+        const isHttps = urlObj.protocol === 'https:';
+        const lib = isHttps ? https : http;
 
-      const options = {
-        hostname: urlObj.hostname,
-        port: urlObj.port || (isHttps ? 443 : 80),
-        path: urlObj.pathname + urlObj.search,
-        method: method || 'GET',
-        headers: {
-          'X-N8N-API-KEY': apiKey,
-          'Content-Type': 'application/json',
+        const options = {
+          hostname: urlObj.hostname,
+          port: urlObj.port || (isHttps ? 443 : 80),
+          path: urlObj.pathname + urlObj.search,
+          method: method || 'GET',
+          headers: {
+            'X-N8N-API-KEY': apiKey,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000
+        };
+
+        if (body) {
+          options.headers['Content-Length'] = Buffer.byteLength(body);
         }
-      };
 
-      if (body) {
-        options.headers['Content-Length'] = Buffer.byteLength(body);
-      }
+        const req = lib.request(options, (res) => {
+          let data = '';
 
-      const req = lib.request(options, (res) => {
-        let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
 
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-
-        res.on('end', () => {
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              resolve({ success: true, data: JSON.parse(data) });
-            } catch (err) {
-              resolve({ success: true, data: data });
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              try {
+                resolve({ success: true, data: JSON.parse(data) });
+              } catch (err) {
+                resolve({ success: true, data: data });
+              }
+            } else {
+              resolve({ success: false, error: `HTTP ${res.statusCode}: ${data}` });
             }
-          } else {
-            resolve({ success: false, error: `HTTP ${res.statusCode}: ${data}` });
-          }
+          });
         });
-      });
 
-      req.on('error', (err) => {
+        req.on('error', (err) => {
+          resolve({ success: false, error: err.message });
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          resolve({ success: false, error: 'Request timeout' });
+        });
+        
+        if (body) {
+          req.write(body);
+        }
+
+        req.end();
+      } catch (err) {
         resolve({ success: false, error: err.message });
-      });
-      
-      if (body) {
-        req.write(body);
       }
-
-      req.end();
     });
   });
 }

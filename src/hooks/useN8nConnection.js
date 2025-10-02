@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { N8nApi } from '../utils/n8nApi.js';
 
 export const useN8nConnection = () => {
@@ -7,22 +7,31 @@ export const useN8nConnection = () => {
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     loadSavedConfig();
   }, []);
 
   const loadSavedConfig = async () => {
-    const result = await window.electronAPI.loadN8nConfig();
-    if (result.success && result.data) {
-      const { baseUrl, apiKey } = result.data;
-      const api = new N8nApi(baseUrl, apiKey);
-      setN8nApi(api);
-      await testConnection(api);
+    try {
+      const result = await window.electronAPI.loadN8nConfig();
+      if (result.success && result.data) {
+        const { baseUrl, apiKey } = result.data;
+        const api = new N8nApi(baseUrl, apiKey);
+        setN8nApi(api);
+        await testConnection(api);
+      }
+    } catch (err) {
+      console.error('Error loading saved config:', err);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
   const testConnection = async (api) => {
+    if (!api) return false;
+    
     setLoading(true);
     setError(null);
     try {
@@ -46,6 +55,10 @@ export const useN8nConnection = () => {
   };
 
   const connect = async (baseUrl, apiKey) => {
+    if (!baseUrl || !apiKey) {
+      return { success: false, error: 'Base URL and API Key are required' };
+    }
+
     const api = new N8nApi(baseUrl, apiKey);
     setN8nApi(api);
     
@@ -60,14 +73,18 @@ export const useN8nConnection = () => {
   };
 
   const disconnect = async () => {
-    await window.electronAPI.deleteN8nConfig();
-    setIsConnected(false);
-    setN8nApi(null);
-    setWorkflows([]);
-    setError(null);
+    try {
+      await window.electronAPI.deleteN8nConfig();
+      setIsConnected(false);
+      setN8nApi(null);
+      setWorkflows([]);
+      setError(null);
+    } catch (err) {
+      console.error('Error disconnecting:', err);
+    }
   };
 
-  const loadWorkflows = async (api = n8nApi) => {
+  const loadWorkflows = useCallback(async (api = n8nApi) => {
     if (!api) return;
     
     setLoading(true);
@@ -77,10 +94,11 @@ export const useN8nConnection = () => {
       setWorkflows(data.data || data || []);
     } catch (err) {
       setError(err.message);
+      setWorkflows([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [n8nApi]);
 
   const getWorkflow = async (id) => {
     if (!n8nApi) throw new Error('Not connected to n8n');
