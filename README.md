@@ -3,6 +3,7 @@
 <div align="center">
 
 ![N8N Code Editor](screenshot.png)
+![Preview WorkFlow](preview.png)
 
 **A powerful desktop editor for n8n workflows with live API integration**
 
