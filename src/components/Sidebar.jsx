@@ -21,6 +21,11 @@ export const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('local');
 
+  const handleOpenN8nWorkflow = async (wf) => {
+    await onOpenN8nWorkflow(wf);
+    setActiveTab('local');
+  };
+
   return (
     <div className="w-64 bg-[#252526] border-r border-[#3e3e42] flex flex-col" style={{ backgroundColor: '#252526' }}>
       <div className="p-2 border-b border-[#3e3e42] space-y-2">
@@ -145,7 +150,7 @@ export const Sidebar = ({
                   .map((wf) => (
                     <div
                       key={wf.id}
-                      onClick={() => onOpenN8nWorkflow(wf)}
+                      onClick={() => handleOpenN8nWorkflow(wf)}
                       className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#2a2d2e] rounded cursor-pointer transition-colors"
                     >
                       <Cloud size={13} className="text-[#519aba] flex-shrink-0" />

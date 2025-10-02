@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { EditorPanel } from './components/EditorPanel.jsx';
 import { Settings } from './components/Settings.jsx';
+import { Preview } from './components/Preview.jsx';
 import { useWorkflow } from './hooks/useWorkflow.js';
 import { useFileOperations } from './hooks/useFileOperations.js';
 import { useN8nConnection } from './hooks/useN8nConnection.js';
@@ -39,6 +40,7 @@ const N8NEditor = () => {
   const [activeTab, setActiveTab] = useState('json');
   const [codeField, setCodeField] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [currentN8nWorkflowId, setCurrentN8nWorkflowId] = useState(null);
   
   const monacoRef = useRef(null);
@@ -176,6 +178,8 @@ const N8NEditor = () => {
           onSave={handleSave}
           hasUnsavedChanges={hasUnsavedChanges}
           isN8nWorkflow={!!currentN8nWorkflowId}
+          onPreview={() => setPreviewOpen(true)}
+          hasWorkflow={!!workflow}
         />
         
         <EditorPanel
@@ -196,6 +200,12 @@ const N8NEditor = () => {
         onConnect={connectN8n}
         isConnected={isN8nConnected}
         onDisconnect={disconnectN8n}
+      />
+
+      <Preview
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        workflow={workflow}
       />
     </div>
   );
