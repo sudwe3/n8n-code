@@ -57,34 +57,6 @@ The build files will be in the `dist/` folder.
 - Save changes with the "Save" button or Cmd/Ctrl+S
 - Unsaved changes are indicated with an orange dot
 
-## Project Structure
-
-```
-n8n-code/
-├── main.js
-├── preload.js
-├── package.json
-├── electron/
-│   ├── window.js
-│   └── ipc-handlers.js
-└── src/
-    ├── index.html
-    ├── index.js
-    ├── App.jsx
-    ├── components/
-    │   ├── Icons.jsx
-    │   ├── Sidebar.jsx
-    │   ├── TreeView.jsx
-    │   ├── TopBar.jsx
-    │   └── EditorPanel.jsx
-    ├── hooks/
-    │   ├── useWorkflow.js
-    │   └── useFileOperations.js
-    └── utils/
-        ├── workflowParser.js
-        └── codeExtractor.js
-```
-
 ## Requirements
 
 - Node.js 16+
